@@ -1,0 +1,19 @@
+version: '3'
+
+tasks:
+  start-srt:
+    cmds:
+      - go run ./cmd/srt
+
+  start-hls:
+    cmds:
+      - go run ./cmd/streaming-hls
+  start-dash:
+    cmds:
+      - go run ./cmd/streaming-dash
+
+  start:
+    deps:
+      - start-srt
+      - start-hls
+      - start-dash
