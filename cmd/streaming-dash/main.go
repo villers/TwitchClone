@@ -1,12 +1,12 @@
 package main
 
 import (
+	"github.com/gin-contrib/cors"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -33,18 +33,16 @@ func startDashServer() error {
 	}()
 
 	router := gin.Default()
+	router.Use(cors.Default())
 
 	router.GET("/", func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "/"+manifest)
 	})
 
-	router.GET("/"+manifest, func(c *gin.Context) {
-		c.File("dash/" + manifest)
-	})
-
-	router.GET("/:segmentName", func(c *gin.Context) {
-		if strings.HasPrefix(c.Param("segmentName"), "stream-") && strings.HasSuffix(c.Param("segmentName"), ".ts") {
-			c.File("dash/" + c.Param("segmentName"))
+	router.GET("/:file", func(c *gin.Context) {
+		if _, err := os.Stat("dash/" + c.Param("file")); err == nil {
+			// Le fichier existe, le servir
+			c.File("dash/" + c.Param("file"))
 		} else {
 			c.Status(http.StatusNotFound)
 		}

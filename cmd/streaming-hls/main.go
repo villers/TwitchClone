@@ -1,12 +1,12 @@
 package main
 
 import (
+	"github.com/gin-contrib/cors"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -34,18 +34,16 @@ func startHlsServer() error {
 	}()
 
 	router := gin.Default()
+	router.Use(cors.Default())
 
 	router.GET("/", func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "/"+playlist)
 	})
 
-	router.GET("/"+playlist, func(c *gin.Context) {
-		c.File("hls/" + playlist)
-	})
-
-	router.GET("/:segmentName", func(c *gin.Context) {
-		if strings.HasPrefix(c.Param("segmentName"), "stream-") && strings.HasSuffix(c.Param("segmentName"), ".ts") {
-			c.File("hls/" + c.Param("segmentName"))
+	router.GET("/:file", func(c *gin.Context) {
+		if _, err := os.Stat("hls/" + c.Param("file")); err == nil {
+			// Le fichier existe, le servir
+			c.File("hls/" + c.Param("file"))
 		} else {
 			c.Status(http.StatusNotFound)
 		}
@@ -69,8 +67,8 @@ func startFfmpeg() error {
 			"-b:a", "128k", // Specifies the audio bit rate (here 128k, or 128 kilobits per second)
 			"-f", "hls", // Specifies the output format (here HLS, or HTTP Live Streaming)
 			"-hls_time", "2", // Specifies the duration of each HLS segment in seconds (here 2 seconds)
-			"-hls_list_size", "6", // Specifies the maximum number of HLS segments in the playlist (here 6 segments)
-			"-hls_segment_filename", "hls/"+segmentName, // Specifies the filename pattern for the HLS segments (here "stream-%d.ts")
+			// "-hls_list_size", "6", // Specifies the maximum number of HLS segments in the playlist (here 6 segments)
+			// "-hls_segment_filename", "hls/"+segmentName, // Specifies the filename pattern for the HLS segments (here "stream-%d.ts")
 			"hls/"+playlist, // Specifies the output playlist filename (here "stream.m3u8")
 		)
 		cmd.Stdout = os.Stdout
